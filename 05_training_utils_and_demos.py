@@ -4,6 +4,7 @@
 # GPT demo intentionally left empty.
 # ============================================================
 
+
 @torch.no_grad()
 def estimate_bert_loss(model, eval_iters=20):
     model.eval()
@@ -18,10 +19,7 @@ def estimate_bert_loss(model, eval_iters=20):
             acc = (preds == y).float().mean().item()
             losses.append(loss.item())
             accs.append(acc)
-        out[split] = {
-            "loss": sum(losses) / len(losses),
-            "acc": sum(accs) / len(accs)
-        }
+        out[split] = {"loss": sum(losses) / len(losses), "acc": sum(accs) / len(accs)}
     model.train()
     return out
 
@@ -59,6 +57,36 @@ def estimate_gpt_loss(model, eval_iters=20):
     return out
 
 
+@torch.no_grad()
+def generate_beam_search(model, idx, max_new_tokens=100, beam_width=3):
+    """
+    Simple beam search for batch size 1.
+    """
+    beam_width = max(1, int(beam_width))
+    beams = [(idx, 0.0)]
+
+    for _ in range(max_new_tokens):
+        candidates = []
+        for seq, score in beams:
+            idx_cond = seq[:, -model.context_length :]
+            logits, _ = model(idx_cond)
+            logits_last = logits[:, -1, :]
+            log_probs = F.log_softmax(logits_last, dim=-1)
+
+            k = min(beam_width, log_probs.size(-1))
+            topk_log_probs, topk_idx = torch.topk(log_probs, k=k, dim=-1)
+
+            for j in range(k):
+                next_token = topk_idx[:, j : j + 1]
+                token_log_prob = topk_log_probs[:, j].item()
+                new_seq = torch.cat([seq, next_token], dim=1)
+                candidates.append((new_seq, score + token_log_prob))
+
+        beams = sorted(candidates, key=lambda x: x[1], reverse=True)[:beam_width]
+
+    return beams[0][0]
+
+
 # ============================================================
 # BERT demo (full)
 # ============================================================
@@ -72,7 +100,7 @@ bert_model = TinyBERT(
     d_model=d_model,
     context_length=context_length,
     n_layers=n_layers,
-    n_classes=2
+    n_classes=2,
 ).to(device)
 
 bert_optimizer = torch.optim.Adam(bert_model.parameters(), lr=learning_rate)
@@ -108,7 +136,7 @@ bart_model = TinyBART(
     vocab_size=vocab_size,
     d_model=d_model,
     context_length=context_length,
-    n_layers=n_layers
+    n_layers=n_layers,
 ).to(device)
 
 bart_optimizer = torch.optim.Adam(bart_model.parameters(), lr=learning_rate)
@@ -138,13 +166,59 @@ print("\n" + "=" * 60)
 print("GPT-LIKE DEMO")
 print("=" * 60)
 
-# TODO:
-# 1. Instantiate TinyGPT.
-# 2. Create an optimizer.
-# 3. Train the model with get_lm_batch().
-# 4. Evaluate it with estimate_gpt_loss().
-# 5. Generate text with:
-#       - temperature sampling
-#       - top-k sampling
-#       - beam search
-# 6. Compare the outputs qualitatively.
+gpt_model = TinyGPT(
+    vocab_size=vocab_size,
+    d_model=d_model,
+    context_length=context_length,
+    n_layers=n_layers,
+).to(device)
+
+gpt_optimizer = torch.optim.Adam(gpt_model.parameters(), lr=learning_rate)
+
+for step in range(101):
+    if step % 50 == 0:
+        losses = estimate_gpt_loss(gpt_model, eval_iters=10)
+        print(
+            f"Step {step:3d} | "
+            f"train loss: {losses['train']:.4f} | "
+            f"val loss: {losses['val']:.4f}"
+        )
+
+    xb, yb = get_lm_batch("train")
+    logits, loss = gpt_model(xb, yb)
+
+    gpt_optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    gpt_optimizer.step()
+
+prompt = "The model "
+start_ids = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
+
+gpt_model.eval()
+with torch.no_grad():
+    greedy_ids = gpt_model.generate_greedy(start_ids.clone(), max_new_tokens=120)
+    temp_ids = gpt_model.generate_temperature(
+        start_ids.clone(), max_new_tokens=120, temperature=0.8
+    )
+    topk_ids = gpt_model.generate_top_k(
+        start_ids.clone(), max_new_tokens=120, temperature=1.0, k=5
+    )
+    beam_ids = generate_beam_search(
+        gpt_model, start_ids.clone(), max_new_tokens=120, beam_width=3
+    )
+gpt_model.train()
+
+print("\nPrompt:")
+print(prompt)
+
+print("\nGreedy:")
+print(decode(greedy_ids[0].tolist()))
+
+print("\nTemperature (0.8):")
+print(decode(temp_ids[0].tolist()))
+
+print("\nTop-k (k=5):")
+print(decode(topk_ids[0].tolist()))
+
+print("\nBeam search (width=3):")
+print(decode(beam_ids[0].tolist()))
