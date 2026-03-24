@@ -65,9 +65,8 @@ class TinyGPT(nn.Module):
         loss = None
 
         if targets is not None:
-            B, T, V = logits.shape
-            logits_flat = logits.view(B * T, V)
-            targets_flat = targets.view(B * T)
+            logits_flat = logits.flatten(0, 1)
+            targets_flat = targets.flatten()
             loss = F.cross_entropy(logits_flat, targets_flat)
 
         return logits, loss
@@ -95,7 +94,7 @@ class TinyGPT(nn.Module):
             logits, _ = self(idx_cond)
             logits_last = logits[:, -1, :]
             next_token = torch.argmax(logits_last, dim=-1, keepdim=True)
-            idx = torch.cat([idx, next_token], dim=1)
+            idx = torch.cat((idx, next_token), dim=1)
 
         return idx
 
@@ -111,10 +110,10 @@ class TinyGPT(nn.Module):
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -self.context_length :]
             logits, _ = self(idx_cond)
-            logits_last = logits[:, -1, :] / temp
+            logits_last = logits[:, -1, :] / temperature
             probs = F.softmax(logits_last, dim=-1)
             next_token = torch.multinomial(probs, num_samples=1)
-            idx = torch.cat([idx, next_token], dim=1)
+            idx = torch.cat((idx, next_token), dim=1)
 
         return idx
 
@@ -128,16 +127,12 @@ class TinyGPT(nn.Module):
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -self.context_length :]
             logits, _ = self(idx_cond)
-            logits_last = logits[:, -1, :] / temp
-
-            vocab_k = min(int(k), logits_last.size(-1))
-            topk_vals, topk_idx = torch.topk(logits_last, k=vocab_k, dim=-1)
-
+            logits_last = logits[:, -1, :] / temperature
+            topk_vals, topk_idx = torch.topk(logits_last, k, dim=-1)
             filtered_logits = torch.full_like(logits_last, float("-inf"))
             filtered_logits.scatter_(dim=-1, index=topk_idx, src=topk_vals)
-
             probs = F.softmax(filtered_logits, dim=-1)
             next_token = torch.multinomial(probs, num_samples=1)
-            idx = torch.cat([idx, next_token], dim=1)
+            idx = torch.cat((idx, next_token), dim=1)
 
         return idx
