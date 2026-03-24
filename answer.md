@@ -1,26 +1,26 @@
 Task 1: Hyperparameters
 
-**Q1.** Hyperparameters like `d_model`, number of layers, attention heads, and feedforward dimension affect model capacity — they determine how much the model can actually learn and represent. Things like learning rate, batch size, dropout, and epochs are more about *how* training happens rather than changing the model's size or power.
+**Q1.** Hyperparameters like `d_model`, number of layers, attention heads, and feedforward dimension affect model capacity as they determine how much the model can actually learn and represent. Things like learning rate, batch size, dropout, and epochs are more about training and how it happens rather than changing the model's size or power.
 
-**Q2.** For BERT, context length matters because it reads the whole input at once bidirectionally, so longer context means better understanding of relationships. For GPT, it's about how far back the model can look when generating — too short and it loses track of earlier context, making outputs less coherent.
+**Q2.** For BERT context length matters because it reads the whole input at once bidirectionally therefore longer contexts result in better understanding of relationships. For GPT it's about how far back the model can look when generating. If its too short it looses previous context and responses become less coherent.
 
-**Q3.** Increasing `d_model` or adding more layers gives the model more capacity to learn complex patterns, but it comes at a cost — more memory, more compute, and a higher chance of overfitting if you don't have enough data.
+**Q3.** Increasing `d_model` or adding more layers gives the model more capacity to learn complex patterns but it results in more memory and compute being needed and the model is also more prone to overfitting.
 
 ---
 
 Task 2: Attention Mechanism
 
-**Q1.** Without causal masking, GPT can see future tokens during generation, which basically lets it "cheat" — the outputs end up unrealistic and incoherent. With masking applied, each token can only attend to what came before it, so the generation flows naturally and makes more sense.
+**Q1.** Without causal masking the GPT can see future tokens therefore it can cheat while generating in a sense, resulting in less coherent responses as its not predicitng based on what came before but predicting by both what came before and what came after. With masking applied each token can only attend to what came before it so the generation is more natural and coherent.
 
 ---
 
 Task 3: Block Types
 
-**Q1.** The version with causal masking behaves autoregressively because it restricts each token to only look at previous ones, so the model generates one token at a time based on what's already been produced.
+**Q1.** The version with causal masking behaves autoregressively because it restricts each token to only look at previous ones, so as explained above it only generates based on what it saw before resulting in more natural generation.
 
-**Q2.** In the encoder-decoder block, source sequence information enters through cross-attention — the decoder uses the encoder's outputs as keys and values, while using its own hidden states as queries.
+**Q2.** In the encoder-decoder block source sequence information enters through cross-attention. The decoder then uses the encoders outputs as keys and values while using its own hidden states as queries.
 
-**Q3.** BERT doesn't need cross-attention because it's only ever processing one sequence — there's no separate source and target. GPT doesn't need it either since it just generates from its own previous tokens with no external input to attend to.
+**Q3.** BERT doesn't need cross-attention because it's only ever processing one sequence. GPT doesnt need it either since it just generates from its own previous tokens with no external input to attend to.
 
 ---
 
