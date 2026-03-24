@@ -6,6 +6,13 @@
 # main driver has already imported math, random, torch, nn, F, Optional.
 # ============================================================
 
+import math
+import random
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
+
 SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)

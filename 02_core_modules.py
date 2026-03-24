@@ -4,6 +4,12 @@
 # Attention is fully implemented.
 # Other blocks remain partially scaffolded for the activity.
 # ============================================================
+import math
+import random
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
 
 
 class FeedForward(nn.Module):
@@ -123,14 +129,8 @@ class DecoderBlock(nn.Module):
         self.ffwd = FeedForward(d_model)
 
     def forward(self, x):
-        # TODO:
-        # 1. Apply layer norm before masked self-attention
-        # 2. Add the residual connection
-        # 3. Apply layer norm before feedforward
-        # 4. Add the residual connection
-
-        # x = ...
-        # x = ...
+        x = x + self.self_attn(self.ln1(x))   
+        x = x + self.ffwd(self.ln2(x))       
         return x
 
 
@@ -156,12 +156,7 @@ class EncoderDecoderBlock(nn.Module):
         self.ffwd = FeedForward(d_model)
 
     def forward(self, x, encoder_out):
-        # TODO:
-        # 1. Apply causal self-attention with residual connection
-        # 2. Apply cross-attention using encoder_out as context
-        # 3. Apply feedforward with residual connection
-
-        # x = ...
-        # x = ...
-        # x = ...
+        x = x + self.self_attn(self.ln1(x))                  # causal self-attention + residual
+        x = x + self.cross_attn(self.ln2(x), encoder_out)    # cross-attention + residual
+        x = x + self.ffwd(self.ln3(x))                       # feedforward + residual
         return x

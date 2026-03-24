@@ -2,6 +2,13 @@
 # 01_batching.py
 # Batch helpers for language modeling, classification, and seq2seq.
 # ============================================================
+import math
+import random
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
+
 
 def get_lm_batch(split="train"):
     """

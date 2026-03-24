@@ -3,6 +3,12 @@
 # Full TinyBERT and TinyBART models.
 # Students can mirror these for TinyGPT.
 # ============================================================
+import math
+import random
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
 
 class TinyBERT(nn.Module):
     """
@@ -47,7 +53,7 @@ class TinyBERT(nn.Module):
             loss = F.cross_entropy(logits, targets)
 
         return logits, loss
-
+    
 
 class TinyBART(nn.Module):
     """
@@ -120,3 +126,5 @@ class TinyBART(nn.Module):
             loss = F.cross_entropy(logits_flat, targets_flat)
 
         return logits, loss
+    
+

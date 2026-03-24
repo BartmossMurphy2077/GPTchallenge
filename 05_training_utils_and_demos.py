@@ -3,6 +3,12 @@
 # Full helpers and demos for BERT and BART.
 # GPT demo intentionally left empty.
 # ============================================================
+import math
+import random
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
 
 
 @torch.no_grad()
