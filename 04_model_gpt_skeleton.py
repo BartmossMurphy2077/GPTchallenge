@@ -17,7 +17,6 @@ class TinyGPT(nn.Module):
     3. Project hidden states to vocabulary logits
     4. If targets are provided, compute next-token loss
     """
-
     def __init__(self, vocab_size, d_model, context_length, n_layers):
         super().__init__()
 
@@ -26,9 +25,9 @@ class TinyGPT(nn.Module):
         self.token_embedding = nn.Embedding(vocab_size, d_model)
         self.position_embedding = nn.Embedding(context_length, d_model)
 
-        self.blocks = nn.Sequential(
-            *[DecoderBlock(d_model, context_length) for _ in range(n_layers)]
-        )
+        self.blocks = nn.Sequential(*[
+            DecoderBlock(d_model, context_length) for _ in range(n_layers)
+        ])
 
         self.ln_f = nn.LayerNorm(d_model)
         self.lm_head = nn.Linear(d_model, vocab_size)
@@ -90,7 +89,7 @@ class TinyGPT(nn.Module):
             Extended sequence
         """
         for _ in range(max_new_tokens):
-            idx_cond = idx[:, -self.context_length :]
+            idx_cond = idx[:, -self.context_length:]
             logits, _ = self(idx_cond)
             logits_last = logits[:, -1, :]
             next_token = torch.argmax(logits_last, dim=-1, keepdim=True)
@@ -105,10 +104,8 @@ class TinyGPT(nn.Module):
         temperature < 1.0 makes output more conservative.
         temperature > 1.0 makes output more random.
         """
-        temp = max(float(temperature), 1e-8)
-
         for _ in range(max_new_tokens):
-            idx_cond = idx[:, -self.context_length :]
+            idx_cond = idx[:, -self.context_length:]
             logits, _ = self(idx_cond)
             logits_last = logits[:, -1, :] / temperature
             probs = F.softmax(logits_last, dim=-1)
@@ -122,10 +119,8 @@ class TinyGPT(nn.Module):
         Top-k sampling:
         keep only the k most likely tokens and sample from them.
         """
-        temp = max(float(temperature), 1e-8)
-
         for _ in range(max_new_tokens):
-            idx_cond = idx[:, -self.context_length :]
+            idx_cond = idx[:, -self.context_length:]
             logits, _ = self(idx_cond)
             logits_last = logits[:, -1, :] / temperature
             topk_vals, topk_idx = torch.topk(logits_last, k, dim=-1)
